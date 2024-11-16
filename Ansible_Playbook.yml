@@ -1,0 +1,36 @@
+---
+- name: Setup Terraform and Git
+  hosts: all
+  become: yes
+
+  vars_files:
+    - /home/Docker/vault.yml
+
+  tasks:
+    - name: Install apt packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - git
+        - unzip
+        - wget
+
+    - name: Install Terraform
+      shell: |
+        wget https://releases.hashicorp.com/terraform/1.0.11/terraform_1.0.11_linux_amd64.zip
+        unzip terraform_1.0.11_linux_amd64.zip
+        mv terraform /usr/local/bin/
+
+    - name: Clone Git Repository
+      git:
+        repo: 'https://github.com/poorvika0021/ABC-1611.git'
+        dest: /home/ExamVM/tf-scripts
+
+    - name: Execute Terraform Scripts
+      shell: |
+        cd /home/ExamVM/tf-scripts
+        terraform init
+        terraform apply -auto-approve
+      register: tf_output
