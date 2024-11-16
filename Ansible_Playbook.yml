@@ -3,9 +3,6 @@
   hosts: all
   become: yes
 
-  vars_files:
-    - /home/Docker/vault.yml
-
   tasks:
     - name: Install apt packages
       apt:
@@ -28,9 +25,32 @@
         repo: 'https://github.com/poorvika0021/ABC-1611.git'
         dest: /home/ExamVM/tf-scripts
 
+    - name: Check for Terraform Configuration Files
+      find:
+        paths: /home/ExamVM/tf-scripts
+        patterns: "*.tf"
+      register: tf_files
+
     - name: Execute Terraform Scripts
       shell: |
         cd /home/ExamVM/tf-scripts
         terraform init
         terraform apply -auto-approve
       register: tf_output
+      when: tf_files.matched > 0
+
+    - name: Extract file1_id from Terraform Output
+      set_fact:
+        file1_id: "{{ tf_output.stdout | regex_search('file1_id = \"(.*)\"', '\\1') }}"
+      when: tf_files.matched > 0
+
+    - name: Display Extracted file1_id
+      debug:
+        msg: "file1_id: {{ file1_id }}"
+      when: tf_files.matched > 0
+    - name: Cleanup Created and Cloned Files
+      file:
+        path: /home/{{ ansible_user }}/tf-scripts
+        state: absent
+
+
